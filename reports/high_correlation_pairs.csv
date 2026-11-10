@@ -1,0 +1,5 @@
+feature_a,feature_b,correlation
+elo_diff,ppg_diff,0.9591957142492912
+ppg_diff,venue_ppg_diff,0.9044907314397347
+ppg_diff,gd_pg_diff,0.9042319321622444
+elo_diff,gd_pg_diff,0.8945381997721356
