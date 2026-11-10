@@ -1,0 +1,24 @@
+feature,group,description
+elo_home,strength,Elo rating of the home team before the match
+elo_away,strength,Elo rating of the away team before the match
+elo_diff,strength,elo_home - elo_away
+abs_elo_diff,strength,|elo_diff|: how evenly matched the teams are (closer = more draws)
+ppg_diff,season,"Season points-per-game difference (home - away), blended with last season"
+gd_pg_diff,season,Season goal-difference-per-game difference (home - away)
+venue_ppg_diff,season,Home team's PPG at home minus away team's PPG away
+form5_home,form,Points won by the home team in its last 5 matches (0-15)
+form5_away,form,Points won by the away team in its last 5 matches (0-15)
+form5_diff,form,form5_home - form5_away
+gf5_diff,form,Avg goals scored last 5 (home team) minus (away team)
+ga5_diff,form,Avg goals conceded last 5 (home team) minus (away team)
+sot5_diff,form,Avg shots on target last 5 (home team) minus (away team)
+draw_rate_home,draw,Share of the home team's last 10 matches that were draws (smoothed)
+draw_rate_away,draw,Share of the away team's last 10 matches that were draws (smoothed)
+total_goals10,draw,Avg total goals per match in both teams' last 10 matches
+h2h_pts,h2h,Home team's avg points per game in last 5 meetings (neutral 1.0 if none)
+h2h_n,h2h,Number of previous meetings used (0-5)
+rest_home,context,Days since the home team's last match (capped at 14)
+rest_away,context,Days since the away team's last match (capped at 14)
+matchweek,context,Matches already played by the home team this season + 1
+home_promoted,context,1 if the home team was not in the league last season
+away_promoted,context,1 if the away team was not in the league last season
