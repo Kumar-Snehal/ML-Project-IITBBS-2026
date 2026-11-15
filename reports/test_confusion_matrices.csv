@@ -1,0 +1,16 @@
+,,pred_A,pred_D,pred_H
+always_home,true_A,0,0,333
+always_home,true_D,0,0,290
+always_home,true_H,0,0,517
+naive_bayes,true_A,178,0,155
+naive_bayes,true_D,95,0,195
+naive_bayes,true_H,91,0,426
+naive_bayes_all_features,true_A,194,48,91
+naive_bayes_all_features,true_D,110,60,120
+naive_bayes_all_features,true_H,108,83,326
+logistic_regression,true_A,167,0,166
+logistic_regression,true_D,71,0,219
+logistic_regression,true_H,67,0,450
+bookmaker_bet365,true_A,188,0,145
+bookmaker_bet365,true_D,84,0,206
+bookmaker_bet365,true_H,88,0,429

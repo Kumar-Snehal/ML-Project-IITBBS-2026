@@ -19,7 +19,7 @@ from collections import defaultdict, deque
 import numpy as np
 import pandas as pd
 
-from config import CLASS_LABELS, LABEL_TO_INT
+from src.config import LABEL_TO_INT
 
 # ---- hyper-parameters of the feature definitions ----------------------------------------
 K_ELO = 20.0
@@ -40,37 +40,46 @@ DEFAULT_TOTAL_GOALS = 2.7
 KEY_COLUMNS = ["Season", "Date", "HomeTeam", "AwayTeam"]
 TARGET_COLUMNS = ["FTR", "y"]
 
-# name -> (group, description).  Order here = column order in the output file.
+# name -> (group, description, derived_from).  Order here = column order in the output file.
+#
+# Redundancy rule: no feature may be an exact linear combination of other features.
+# Earlier versions stored elo_home, elo_away AND elo_diff (= elo_home - elo_away), and
+# form5_home, form5_away AND form5_diff. Those are the same information counted twice,
+# which makes Naive Bayes over-confident and makes logistic-regression coefficients
+# meaningless. Only the difference is kept: it is what matters for the result, and it is
+# also unaffected by the slow drift of the league-average Elo rating over the seasons.
+#
+# derived_from names the feature a NON-linear transform was computed from. Such a feature
+# is fine for logistic regression (a linear model cannot build |x| on its own, and
+# |elo_diff| is what lets it recognise evenly matched games, i.e. likely draws), but it
+# is excluded from Naive Bayes, whose class-conditional distribution of elo_diff already
+# captures that information.
 FEATURE_INFO = {
     # strength
-    "elo_home":        ("strength", "Elo rating of the home team before the match"),
-    "elo_away":        ("strength", "Elo rating of the away team before the match"),
-    "elo_diff":        ("strength", "elo_home - elo_away"),
-    "abs_elo_diff":    ("strength", "|elo_diff|: how evenly matched the teams are (closer = more draws)"),
+    "elo_diff":        ("strength", "Elo rating of the home team minus that of the away team, before the match", None),
+    "abs_elo_diff":    ("strength", "|elo_diff|: how evenly matched the teams are (closer = more draws)", "elo_diff"),
     # season-to-date
-    "ppg_diff":        ("season", "Season points-per-game difference (home - away), blended with last season"),
-    "gd_pg_diff":      ("season", "Season goal-difference-per-game difference (home - away)"),
-    "venue_ppg_diff":  ("season", "Home team's PPG at home minus away team's PPG away"),
+    "ppg_diff":        ("season", "Season points-per-game difference (home - away), blended with last season", None),
+    "gd_pg_diff":      ("season", "Season goal-difference-per-game difference (home - away), shrunk toward 0 early in the season", None),
+    "venue_ppg_diff":  ("season", "Home team's PPG at home minus away team's PPG away", None),
     # recent form
-    "form5_home":      ("form", "Points won by the home team in its last 5 matches (0-15)"),
-    "form5_away":      ("form", "Points won by the away team in its last 5 matches (0-15)"),
-    "form5_diff":      ("form", "form5_home - form5_away"),
-    "gf5_diff":        ("form", "Avg goals scored last 5 (home team) minus (away team)"),
-    "ga5_diff":        ("form", "Avg goals conceded last 5 (home team) minus (away team)"),
-    "sot5_diff":       ("form", "Avg shots on target last 5 (home team) minus (away team)"),
+    "form5_diff":      ("form", "Points won in the last 5 matches: home team minus away team", None),
+    "gf5_diff":        ("form", "Avg goals scored last 5 (home team) minus (away team)", None),
+    "ga5_diff":        ("form", "Avg goals conceded last 5 (home team) minus (away team)", None),
+    "sot5_diff":       ("form", "Avg shots on target last 5 (home team) minus (away team)", None),
     # draw tendency
-    "draw_rate_home":  ("draw", "Share of the home team's last 10 matches that were draws (smoothed)"),
-    "draw_rate_away":  ("draw", "Share of the away team's last 10 matches that were draws (smoothed)"),
-    "total_goals10":   ("draw", "Avg total goals per match in both teams' last 10 matches"),
+    "draw_rate_home":  ("draw", "Share of the home team's last 10 matches that were draws (smoothed)", None),
+    "draw_rate_away":  ("draw", "Share of the away team's last 10 matches that were draws (smoothed)", None),
+    "total_goals10":   ("draw", "Avg total goals per match in both teams' last 10 matches", None),
     # head to head
-    "h2h_pts":         ("h2h", "Home team's avg points per game in last 5 meetings (neutral 1.0 if none)"),
-    "h2h_n":           ("h2h", "Number of previous meetings used (0-5)"),
+    "h2h_pts":         ("h2h", "Home team's avg points per game in last 5 meetings (neutral 1.0 if none)", None),
+    "h2h_n":           ("h2h", "Number of previous meetings used (0-5)", None),
     # context
-    "rest_home":       ("context", "Days since the home team's last match (capped at 14)"),
-    "rest_away":       ("context", "Days since the away team's last match (capped at 14)"),
-    "matchweek":       ("context", "Matches already played by the home team this season + 1"),
-    "home_promoted":   ("context", "1 if the home team was not in the league last season"),
-    "away_promoted":   ("context", "1 if the away team was not in the league last season"),
+    "rest_home":       ("context", "Days since the home team's last match (capped at 14)", None),
+    "rest_away":       ("context", "Days since the away team's last match (capped at 14)", None),
+    "matchweek":       ("context", "Matches already played by the home team this season + 1", None),
+    "home_promoted":   ("context", "1 if the home team was not in the league last season", None),
+    "away_promoted":   ("context", "1 if the away team was not in the league last season", None),
 }
 FEATURE_COLUMNS = list(FEATURE_INFO)
 
@@ -191,12 +200,10 @@ def build_features(matches: pd.DataFrame) -> pd.DataFrame:
             rows.append(dict(
                 Season=season, Date=m.Date, HomeTeam=m.HomeTeam, AwayTeam=m.AwayTeam,
                 FTR=m.FTR, y=LABEL_TO_INT[m.FTR],
-                elo_home=home.elo, elo_away=away.elo,
                 elo_diff=home.elo - away.elo, abs_elo_diff=abs(home.elo - away.elo),
                 ppg_diff=home.ppg - away.ppg,
                 gd_pg_diff=home.gd_per_game - away.gd_per_game,
                 venue_ppg_diff=home.home_ppg - away.away_ppg,
-                form5_home=home.form_points(), form5_away=away.form_points(),
                 form5_diff=home.form_points() - away.form_points(),
                 gf5_diff=home.mean_recent("gf", SHORT_WINDOW, DEFAULT_GOALS_FOR)
                          - away.mean_recent("gf", SHORT_WINDOW, DEFAULT_GOALS_FOR),
@@ -233,6 +240,6 @@ def build_features(matches: pd.DataFrame) -> pd.DataFrame:
 
 def feature_dictionary() -> pd.DataFrame:
     return pd.DataFrame(
-        [(name, group, desc) for name, (group, desc) in FEATURE_INFO.items()],
-        columns=["feature", "group", "description"],
+        [(name, group, desc, derived or "") for name, (group, desc, derived) in FEATURE_INFO.items()],
+        columns=["feature", "group", "description", "derived_from"],
     )

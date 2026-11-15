@@ -4,7 +4,7 @@ import re
 import numpy as np
 import pandas as pd
 
-from config import DATASET_DIR, FULL_SEASON_MATCHES, TEAM_NAME_FIXES
+from src.config import DATASET_DIR, FULL_SEASON_MATCHES, TEAM_NAME_FIXES
 
 KEEP_COLUMNS = [
     "Date", "HomeTeam", "AwayTeam", "FTHG", "FTAG", "FTR", "HTHG", "HTAG", "HTR", "Referee",

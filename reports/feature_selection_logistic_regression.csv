@@ -1,0 +1,20 @@
+feature,mutual_information,decision,reason
+elo_diff,0.0859,selected,
+ppg_diff,0.0614,dropped,|r| = 0.96 with selected feature elo_diff
+gd_pg_diff,0.0582,dropped,|r| = 0.89 with selected feature elo_diff
+form5_diff,0.0534,selected,
+venue_ppg_diff,0.049,selected,
+sot5_diff,0.0484,selected,
+ga5_diff,0.0255,selected,
+gf5_diff,0.0161,selected,
+h2h_pts,0.015,selected,
+abs_elo_diff,0.0052,selected,
+matchweek,0.0043,selected,
+away_promoted,0.0036,selected,
+draw_rate_home,0.0025,selected,
+draw_rate_away,0.0,dropped,no mutual information with the result
+total_goals10,0.0,dropped,no mutual information with the result
+rest_home,0.0,dropped,no mutual information with the result
+h2h_n,0.0,dropped,no mutual information with the result
+rest_away,0.0,dropped,no mutual information with the result
+home_promoted,0.0,dropped,no mutual information with the result
