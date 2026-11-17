@@ -101,7 +101,8 @@ Test set: 1,140 matches (2015-16, 2016-17, 2017-18). Models were refit on train 
 ML-Project-IITBBS-2026/
 ├── README.md
 ├── requirements.txt          Python dependencies
-├── run_all.sh                runs every pipeline step in order
+├── run_all.sh                runs every pipeline step in order (macOS / Linux / Git Bash / WSL)
+├── run_all.bat               the same, for Windows (Command Prompt or PowerShell)
 ├── .gitignore
 │
 ├── dataset/                  ORIGINAL Kaggle data, never modified
@@ -167,7 +168,7 @@ features/train.csv   validation.csv   test.csv
 ```
 
 `processed/`, `features/`, `models/` and `reports/` are **generated** folders. They are included in the
-repository for convenience, but you can delete them and recreate them with `run_all.sh`.
+repository for convenience, but you can delete them and recreate them with `run_all.sh` (or `run_all.bat` on Windows).
 
 ---
 
@@ -177,7 +178,7 @@ repository for convenience, but you can delete them and recreate them with `run_
 
 - **Python 3.12** (this is what the project was run on; other recent Python 3 versions are likely fine)
 - `pip`
-- A terminal opened in the **project root** (the folder that contains `src/` and `run_all.sh`)
+- A terminal opened in the **project root** (the folder that contains `src/`, `run_all.sh` and `run_all.bat`)
 
 ### 4.2 Set up an environment
 
@@ -201,18 +202,49 @@ matplotlib 3.11.2 and joblib 1.6.0.
 
 ### 4.3 Run the whole pipeline
 
+There is one script per platform. Both run the same eight steps in the same order and **stop at the first
+step that fails**.
+
+**macOS / Linux (also Git Bash or WSL on Windows)**
 ```bash
 sh run_all.sh
 ```
 
-To use a specific interpreter (for example the virtual environment's):
+**Windows (Command Prompt or PowerShell)**
+```bat
+run_all.bat
+```
+In PowerShell, type `.\run_all.bat`.
+
+You can run `run_all.bat` from any folder, including by double-clicking it, because it first moves to the
+project root itself. If you double-click it, the window may close when it finishes; run it from a terminal
+to keep the output visible.
+
+**Which Python is used**
+
+| Platform | Order of preference |
+|---|---|
+| `run_all.sh` | the `PYTHON` environment variable, otherwise `python3` |
+| `run_all.bat` | the `PYTHON` environment variable, otherwise `.venv\Scripts\python.exe` if it exists, otherwise `python` |
+
+To choose an interpreter yourself:
 
 ```bash
+# macOS / Linux
 PYTHON=.venv/bin/python sh run_all.sh
 ```
-
-> **Windows:** `sh` is not available in plain PowerShell. Use **Git Bash** or **WSL**, or simply run the
-> eight commands in the next section one after another.
+```bat
+:: Windows (Command Prompt): set the variable on its own line, then run the script
+set PYTHON=C:\path\to\python.exe
+run_all.bat
+```
+```powershell
+# Windows (PowerShell)
+$env:PYTHON = "C:\path\to\python.exe"
+.\run_all.bat
+```
+> In Command Prompt, do not write `set PYTHON=... && run_all.bat` on one line: the space before `&&`
+> becomes part of the path and the interpreter will not be found.
 
 ### 4.4 Run the steps one by one
 
@@ -671,8 +703,10 @@ and add it to `probabilities` in `evaluate.py`.
 | Problem | Cause and fix |
 |---|---|
 | `ModuleNotFoundError: No module named 'src'` | You ran a file directly or from the wrong folder. Run from the **project root** with `python -m src.<package>.<module>`. |
-| `FileNotFoundError: ... features/train.csv` (or similar) | An earlier step has not been run. Run the steps in order, or use `sh run_all.sh`. |
-| `sh: command not found` (Windows) | Use Git Bash or WSL, or run the eight commands in section 4.4 individually. |
+| `FileNotFoundError: ... features/train.csv` (or similar) | An earlier step has not been run. Run the steps in order, or use `run_all.sh` / `run_all.bat`. |
+| `sh: command not found` (Windows) | `sh` is not part of Command Prompt or PowerShell. Use `run_all.bat` instead (or Git Bash / WSL). |
+| `'python' is not recognized` (Windows) | Python is not on your PATH. Activate the virtual environment first (section 4.2), or install Python and tick "Add to PATH", or set `PYTHON` to the full path of `python.exe`. |
+| PowerShell blocks `Activate.ps1` ("running scripts is disabled") | Run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once, or activate from Command Prompt with `.venv\Scripts\activate.bat`. |
 | `python: command not found` | Use `python3`, or set `PYTHON=python3`. |
 | Warning or error when loading a `.joblib` model | scikit-learn version mismatch. Re-run steps 5 and 6. |
 | `AssertionError: an incomplete season slipped into the feature set` | `FEATURE_SEASONS_FIRST/LAST` in `config.py` now include 2018-19 or 2019-20. Restore the range. |
@@ -723,6 +757,6 @@ Compared with the first version (feature engineering only):
 | **Evaluation** | n/a | New `evaluate.py` with six metrics, baselines, the bookmaker benchmark and an ablation. |
 | **Metrics** | n/a | Accuracy, log loss, Brier, RPS, macro-F1, number of draws predicted. |
 | **Config** | Paths and seasons | Also holds selection thresholds, Laplace α, and the tuning grids. |
-| **`run_all.sh`** | Ran scripts | Runs the eight module commands, with an optional `PYTHON` variable. |
+| **`run_all.sh` / `run_all.bat`** | Ran scripts | Run the eight module commands, with an optional `PYTHON` variable. `run_all.bat` is the Windows equivalent. |
 | **Dependencies** | pandas, numpy, scikit-learn, matplotlib | Adds `joblib`. |
 | **`.gitignore`** | None | Ignores `.vscode`, `__pycache__`, `.venv`, `.env`. |
